@@ -1,0 +1,313 @@
+---
+title: "Time Well Spent? A Study on How High School Students’ Activities Affect Their Grades"
+subtitle: "ECON 471 Research Project"
+author: "Ramsey El Lethy, Darwin Mah"
+date : 04-29-2024
+header-includes:
+    - \usepackage{setspace}\doublespacing
+    - \usepackage{placeins}
+output: pdf_document
+---
+
+## Introduction 
+
+It is no secret that, as students, we see a direct relationship between the time we invest in studying concepts and our exam performance. However, students' lives incorporate so much more activity than just studying. Whether finding time to care for the people in our lives or setting aside a moment for ourselves, students consistently add numerous activities to their schedules. Some of these are just too much, some seriously help, and some have no effect. Time is significant to us, so learning how we spend it can give us insights into our opportunities and shortcomings as we traverse this educational journey. 
+
+## Abstract
+To assess the impact of how students divide their time on their academic performance, we acquired data from two thousand individuals, all of whom are high schoolers of different genders and ages. Within the data set, each student was recorded, including whether they took part in extracurricular activities if they had a part-time job, the number of absences, and the number of hours students spent studying a week. We also recorded test scores for multiple subjects, including math, history, physics, chemistry, biology, english, and geography. Our model represented true or false records of having a part-time job or an activity as a 0 for false and a 1 for true. We performed multiple regressions, each for every individual subject. Regressing the same independent variables on the different scores. We aimed to identify the relationship between these factors and their test scores. 
+
+\newpage
+## Observations and Analysis 
+We perform multiple regression analyses for multiple subjects to find consistent relationships between the variables across each 
+ subject. The first thing we looked at was the individual significance of each 
+ variable; we found that consistently, the only insignificant factor was
+ whether or not students participated in extracurricular activities. In our 
+ analysis of the overall significance of the model, a rejection of the null
+ hypothesis due to a large F statistic coincides with at least 
+ one of our parameters, in this case, extracurricular, not being able to 
+ explain student performance in any capacity. We see consistent relationships between student 
+ performance for the rest of our parameters. Table 1 below presents the values of the 
+ coefficients and respective tests. Aligning with common perceptions about
+ studying, we see that our weekly self-study hour parameter is positive in 
+ all models. This means that an increase in time spent studying increases student
+ performance. Looking at students' absences, we see a negative
+ relationship between being at school and their performance. Interestingly, 
+ students with a job have decreased math, 
+ physics, and history performance. However, biology gave us conflicting results, expressing a 
+ positive relationship between having a job and performance.
+
+
+
+```{r Regression Analysis, results = 'asis', echo = FALSE, message = FALSE }
+student_data <- read.csv("student-scores.csv", header = TRUE)
+
+#Representing our dummy vairables as numeric values
+extra_curricular <- as.numeric(student_data$extracurricular_activities == "True")
+has_job <- as.numeric(student_data$part_time_job == "True")
+
+#Regressive Stastics 
+student_regression_math <- 
+  lm(math_score ~ absence_days + 
+  weekly_self_study_hours +extra_curricular+has_job, data = student_data)
+
+student_regression_phys <- 
+  lm(physics_score ~ absence_days + 
+  weekly_self_study_hours +extra_curricular+has_job, data = student_data)
+
+student_regression_his <- 
+  lm(history_score ~ absence_days + 
+  weekly_self_study_hours +extra_curricular+has_job, data =student_data)
+
+student_regression_bio <- 
+  lm(biology_score ~ absence_days + 
+  weekly_self_study_hours +extra_curricular + has_job, data =student_data)
+
+
+library(dplyr)
+library(knitr)
+library(kableExtra)
+
+# Function to create a data frame of coefficients for a given model
+create_coefficients_dataframe <- function(regression_model, model_name) {
+  # Extract the summary of the model
+  model_summary <- summary(regression_model)
+  
+  # Extract coefficients and their statistics
+  coefficients <- model_summary$coefficients  # This includes Estimate, Std. Error, t value, and Pr(>|t|)
+  
+  # Extract F-statistic and its degrees of freedom
+  f_statistic <- model_summary$fstatistic["value"]
+   df1 = model_summary$fstatistic["numdf"]  # Degrees of freedom for the model
+  df2 = model_summary$fstatistic["dendf"]  # Degrees of freedom for the residuals
+  f_p_value = pf(f_statistic, df1, df2, lower.tail = FALSE)  # Calculating the p-value for the F-statistic
+  
+  # Create a data frame containing the coefficients and additional model details
+  df <- data.frame(
+    Model = model_name,
+    CoefficientValue = coefficients[, "Estimate"],
+    StdError = coefficients[, "Std. Error"],
+    TValue = coefficients[, "t value"],
+    Pr = coefficients[, "Pr(>|t|)"],
+    FStatistic = rep(f_statistic, nrow(coefficients)),
+    ResidualDF = rep(df2, nrow(coefficients))
+  )
+  return(df)
+}
+
+# Example of applying the function to a model
+df_math <- create_coefficients_dataframe(student_regression_math, "Math")
+df_phys <- create_coefficients_dataframe(student_regression_phys, "Physics")
+df_his <- create_coefficients_dataframe(student_regression_his, "History")
+df_bio <- create_coefficients_dataframe(student_regression_bio, "Biology")
+
+# Combine all data frames into one
+all_coefficients_df <- dplyr::bind_rows(df_math, df_phys, df_his, df_bio)
+
+
+
+# Display the table with enhanced formatting for PDF
+ all_coefficients_df %>%
+  kable("latex", booktabs = TRUE, caption = "Summary Statistics for Original Model") %>%
+  kable_styling(latex_options = c("striped", "scale_down"))
+```
+
+ \FloatBarrier
+\newpage
+
+## Residual Analysis 
+
+ 
+
+ These conflicting results of students having a job between biology and the rest
+ of the subjects led us to believe there might be some possible error 
+ in regression. We were not inclined to believe in the existence of a linear
+ relationship between our independent variables; in other terms, multicollinearity, because in all of our subjects' regressive 
+ output, the F-test for overall significance coincided with the T-test for individual significance. Our next thought was to analyze the residuals' linearity and our distribution's normality. We  generated
+ plots for each model that can give us insights about non-normality and heteroscedasticity. Each plot
+ grouping has been labeled according to its respective subject. Consisting of two different graphs, 
+ first, we plotted our Residuals vs. Fitted values, generating a line best fit 
+ for our residuals; we can see if there is a linear relationship between 
+ our residuals and the fitted values. For non-normality, we have plotted our 
+ standardized residuals against theoretical quantities for our standard distribution. 
+ This is represented as a Q-Q Plot, deviations from the one-to-one 
+ linear relationship might explain where skewness may exist.
+
+ 
+
+```{r Residual Analysis, echo = FALSE}
+plot(student_regression_bio, which = c(1), main = " ")
+title(main = "Biology")
+plot(student_regression_bio, which = c(2))
+plot(student_regression_math, which = c(1), main = " ")
+title(main = "Math")
+plot(student_regression_math, which = c(2))
+plot(student_regression_phys, which = c(1), main = " ")
+title(main = "Physics")
+plot(student_regression_phys, which = c(2))
+plot(student_regression_his, which = c(1), main = " ")
+title(main = "History")
+plot(student_regression_his, which = c(2))
+```
+ 
+ 
+## Results of Residual Analysis
+
+
+Plotting our Standardized Residuals against our fitted values consistently
+showed us a non-linear relationship. We would like to see our line of best fit 
+horizontal and linear, but there seems to be some quadratic relationship
+between the residuals and fitted values. This tells us that our errors are not
+linear. Subsequently, these results put into question any statistical inference including 
+the significance of our variables. In our Q-Q plot, we hope to have residuals hugging close
+to our theoretical distribution. We see a deviation in our 
+extreme theoretical values, which leads us to believe that our model departs 
+from normality. Skewness in our distribution violates the assumption of 
+normality in our model, which also questions the overall significance of our 
+model. We cannot entirely believe that students' extracurricular activities 
+are the only insignificant parameter. We must 
+attempt to correct this in some capacity to gain valid results. 
+
+
+
+```{r Log Transformation, echo = FALSE}
+student_data <- student_data %>%
+  mutate(
+    log_math_score = log(math_score + 1),  # Adding 1 to avoid log(0)
+    log_physics_score = log(physics_score + 1),
+    log_history_score = log(history_score + 1),
+    log_biology_score = log(biology_score + 1),
+    log_absence_days = log(absence_days + 1),
+    log_weekly_self_study_hours = log(weekly_self_study_hours + 1),
+    extra_curricular = as.numeric(extracurricular_activities == "True"),
+    has_job = as.numeric(part_time_job == "True")
+  )
+
+# Creating regression models with log-transformed variables
+student_regression_math_log <- lm(log_math_score ~ log_absence_days + log_weekly_self_study_hours + extra_curricular + has_job, data = student_data)
+student_regression_phys_log <- lm(log_physics_score ~ log_absence_days + log_weekly_self_study_hours + extra_curricular + has_job, data = student_data)
+student_regression_his_log <- lm(log_history_score ~ log_absence_days + log_weekly_self_study_hours + extra_curricular + has_job, data = student_data)
+student_regression_bio_log <- lm(log_biology_score ~ log_absence_days + log_weekly_self_study_hours + extra_curricular + has_job, data = student_data)
+
+# Function to create a data frame of coefficients for log-transformed regression models
+create_coefficients_log_dataframe <- function(regression_model, model_name) {
+  # Extract the summary of the model
+  model_summary <- summary(regression_model)
+  
+  
+   # Extract coefficients and their statistics
+  coefficients <- model_summary$coefficients  # This includes Estimate, Std. Error, t value, and Pr(>|t|)
+  
+  # Extract F-statistic and its degrees of freedom
+  f_statistic <- model_summary$fstatistic["value"]
+  df1 = model_summary$fstatistic["numdf"]  # Degrees of freedom for the model
+  df2 = model_summary$fstatistic["dendf"]  # Degrees of freedom for the residuals
+  f_p_value = pf(f_statistic, df1, df2, lower.tail = FALSE)  # Calculating the p-value for the F-statistic
+  
+  # Create a data frame containing the coefficients and additional model details
+  df <- data.frame(
+    Model = model_name,
+    CoefficientValue = coefficients[, "Estimate"],
+    StdError = coefficients[, "Std. Error"],
+    TValue = coefficients[, "t value"],
+    Pr = coefficients[, "Pr(>|t|)"],
+    FStatistic = rep(f_statistic, nrow(coefficients)),
+    FPValue = rep(f_p_value, nrow(coefficients)),
+    ModelDF = rep(df1, nrow(coefficients)),
+    ResidualDF = rep(df2, nrow(coefficients))
+  )
+  return(df)
+}
+
+# Assuming log-transformed models are named as student_regression_math_log, etc.
+df_math_log <- create_coefficients_log_dataframe(student_regression_math_log, "Log Math")
+df_phys_log <- create_coefficients_log_dataframe(student_regression_phys_log, "Log Physics")
+df_his_log <- create_coefficients_log_dataframe(student_regression_his_log, "Log History")
+df_bio_log <- create_coefficients_log_dataframe(student_regression_bio_log, "Log Biology")
+
+# Combine all data frames into one
+all_coefficients_log_df <- dplyr::bind_rows(df_math_log, df_phys_log, df_his_log, df_bio_log)
+
+
+```
+
+```{r Table, echo = FALSE}
+#View or display the combined data frame, formatted for PDF output with LaTeX
+all_coefficients_log_df %>%
+ knitr::kable("latex", booktabs = TRUE, caption = "Summary Statistics for Log-Transformed Models") %>%
+  kableExtra::kable_styling(latex_options = c("striped", "scale_down"))
+
+```
+
+\pagebreak
+\FloatBarrier
+## Correcting Errors in Regression
+We regressed the same parameters
+over a log-transformed model to correct our non-linear errors. Performing a logarithmic transformation can correct
+for heteroscedasticity among errors in some cases. So, we decided to give it a 
+try. 
+Not only can it correct for non-linear errors, but it can reduce the skewness
+that we might be dealing with due to our model facing non-normality. 
+If we spread out the data clumps and combine them
+for another regression, we might see different results that follow 
+normality. In this case of trying to correct for non-normality and heteroscedastic 
+errors, a logarithmic transformation became the apparent treatment of this model. 
+Table 2, posted above, shows us the new results of our regression. If we can 
+correct our errors in regression and still receive the same or similar results,
+we would have much more reason to believe in the relationships of our independent 
+variables on student performance. 
+
+```{r Log Transformed Residuals, echo = FALSE}
+plot(student_regression_bio_log, which = c(1), main = " ")
+title(main = "Biology")
+plot(student_regression_bio_log, which = c(2))
+plot(student_regression_math_log, which = c(1), main = " ")
+title(main = "Math")
+plot(student_regression_math_log, which = c(2))
+plot(student_regression_phys_log, which = c(1), main = " ")
+title(main = "Physics")
+plot(student_regression_phys_log, which = c(2))
+plot(student_regression_his_log, which = c(1), main = " ")
+title(main = "History")
+plot(student_regression_his_log, which = c(2))
+
+title(main = "History")
+```
+
+## Results of Log Transformation
+Visualizing the same residual plots and comparing our non-log-transformed residual to the log-transformed, we can consistently see more linearity among our residuals. So, heteroscedasticity is 
+corrected to some degree. Analyzing our Q-Q Results, we see that normality 
+is corrected on the extreme positive end, but we lose normality sooner in the 
+negative direction. Listed in Table 2, The significance of our model  
+aligns with our original regression for math, physics, and history, 
+being that extracurricular activities were the only factor that was individually
+insignificant. Looking then at the relationships of each variable, we still see 
+that studying is positive, absences are harmful, and having a job is also damaging. Looking at biology, we find that studying was the only significant 
+factor in regression. This led us to believe the existence of other confounding
+factors that were not present in our data set, such as what kind of job students
+were performing, potentially students were a part of activities that were related
+to the subject of study, like shadowing in a lab setting for biology, etc. 
+
+## Conclusion
+
+Though our confidence in our relationships 
+has increased as a result of transforming our data, we cannot definitively 
+claim the relationships observed are statistically significant because we 
+are diverging from normality, as well as our errors are slightly 
+heteroscedastic. Aside from this, we have potentially reinforced the concept of studying 
+and its positive attributes on student performance, as well as potentially
+identifying the relationship between how students spend their time outside of 
+school and performance. Pulling quantitative and qualitative data together opened the door for 
+us to see what life is like for students juggling plenty of activities. 
+To further iron out and correct the errors in regression, we would like to 
+observe more data from different attributes. Things like how much time students
+spend with teachers outside of class, learn about their aspirations, etc. Introducing
+more factors could potentially grow our understanding of these relationships, but 
+may also invite more violations of regressive assumptions that need to be corrected. 
+ 
+
+
+
+
+
+
+
